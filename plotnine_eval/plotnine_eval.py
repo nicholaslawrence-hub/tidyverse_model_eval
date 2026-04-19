@@ -10,19 +10,17 @@ Usage:
 """
 
 import anthropic
-import subprocess
-import sys
-import os
-import re
-import json
-import tempfile
 from dataclasses import dataclass, field
+import os
+import re 
+import sys 
+import subprocess 
 from pathlib import Path
 
 client = anthropic.Anthropic()
 
-PLOTNINE_SYSTEM = """You are a Python data visualization expert specializing in plotnine.
-When given a task, respond with ONLY valid, complete, runnable Python code — no markdown fences, no prose.
+PLOTNINE_SYSTEM = """You are a Python data visualization expert specializing in the Python visualization library plotnine, developed by Posit.
+When given a task, respond with ONLY valid, complete, runnable Python code. 
 
 Rules you must follow:
 - `from plotnine import *` at the top (always star-import)
@@ -30,8 +28,8 @@ Rules you must follow:
 - Categorical variables: wrap in factor() inside aes — aes(fill='factor(cyl)')
 - Stat-computed text labels: use after_stat() and format_string parameter, not f-strings
 - Assign the final plot to variable `p`, then save: p.save('output.png', dpi=150, width=8, height=6)
-- Import pandas and any plotnine.data datasets you need"""
-
+- Prioritize usage of default datasets for tutorial questions, and import pandas if needed. 
+"""
 
 # ─── Data structures ──────────────────────────────────────────────────────────
 
@@ -278,9 +276,6 @@ CASES: list[EvalCase] = [
 ]
 
 CASES_BY_ID = {c.id: c for c in CASES}
-
-
-# ─── Runner ───────────────────────────────────────────────────────────────────
 
 def run_eval_case(case: EvalCase) -> EvalResult:
     code = ask_claude(case.prompt)
