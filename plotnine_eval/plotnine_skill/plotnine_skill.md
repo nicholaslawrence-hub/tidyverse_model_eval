@@ -1,7 +1,6 @@
 ---
 name: plotnine
 description: Create statistical visualizations using plotnine (Python's ggplot2). Use when asked to build charts, plots, or visualizations with plotnine, ggplot, or grammar-of-graphics style plots in Python.
-version: 1.0.0
 triggers:
   - plotnine
   - ggplot in Python
@@ -47,6 +46,7 @@ p.save('output.png', dpi=150, width=8, height=6)
 ## Common Tasks with Examples
 
 ### Scatter plot with trend line
+
 ```python
 from plotnine import *
 from plotnine.data import mtcars

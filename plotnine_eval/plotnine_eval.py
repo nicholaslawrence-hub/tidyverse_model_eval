@@ -274,7 +274,7 @@ def save_report(results: list[EvalResult], path: str = "plotnine_eval_report.jso
             "total": len(results),
             "passed": sum(r.passed for r in results),
             "avg_score": round(sum(r.score for r in results) / len(results), 3) if results else 0,
-            "median_score": round(statistics.median(r.score for r in results))
+            "median_score": round(statistics.median(r.score for r in results), 3) if results else 0
         },
         "cases": [
             {
