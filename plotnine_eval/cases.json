@@ -10,14 +10,14 @@
     "prompt": "Using plotnine and mtcars (from plotnine.data import mtcars; import pandas as pd; df = pd.DataFrame(mtcars)), create a bar chart showing count of cars for each cylinder count (cyl as factor). Add percentage labels above each bar using geom_text with after_stat and format_string. Use theme_classic. Save to 'output.png'."
   },
   {
-    "id": "facet_wrap boxplot",
+    "id": "facet_wrap_boxplot",
     "category": "box",
     "prompt": "Using plotnine and mtcars (from plotnine.data import mtcars; import pandas as pd; df = pd.DataFrame(mtcars)), create a boxplot of miles per gallon (mpg) grouped by cylinder count (cyl as factor). Facet the plot by the number of gears (gear as factor) using facet_wrap. Apply theme_light and add a title. Save to 'output.png'."
-  }
+  },
   {
     "id": "histogram_social",
     "category": "distribution",
-    "prompt": "Load 'Social_media_impact_on_life.csv' into a pandas DataFrame. Using plotnine, create a histogram of 'Avg_Daily_Usage_Hours' filled by 'Gender' with 20 bins and alpha=0.7. Facet by 'Academic_Level'. Apply theme_bw and add a descriptive title and axis labels with labs(). Save to 'output.png'."
+    "prompt": "Load 'example_datasets/Social_media_impact_on_life.csv' into a pandas DataFrame. Using plotnine, create a histogram of 'Avg_Daily_Usage_Hours' filled by 'Gender' with 20 bins and alpha=0.7. Facet by 'Academic_Level'. Apply theme_bw and add a descriptive title and axis labels with labs(). Save to 'output.png'."
   },
   {
     "id": "boxplot_jitter",
@@ -27,7 +27,7 @@
   {
     "id": "line_grouped",
     "category": "line",
-    "prompt": "Load 'Social_media_impact_on_life.csv'. Group by 'Age' and compute the mean of sleep hours by age group 'Mental_Health_Score'. Using plotnine, create a line chart with age on x and mean score on y. Overlay point markers. Color the line 'steelblue'. Apply theme_minimal and add axis labels. Save to 'output.png'."
+    "prompt": "Load 'example_datasets/Social_media_impact_on_life.csv'. Group by 'Age' and compute the mean of 'Mental_Health_Score'. Using plotnine, create a line chart with age on x and mean score on y. Overlay point markers. Color the line 'steelblue'. Apply theme_minimal and add axis labels. Save to 'output.png'."
   },
   {
     "id": "custom_theme",

@@ -5,12 +5,14 @@ from dotenv import load_dotenv
 from pathlib import Path
 import random
 
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+load_dotenv(dotenv_path=Path(__file__).parent / "config.env")
+load_dotenv()
 
 API_KEY = os.getenv('LANGCHAIN_API_KEY')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 DATASET_NAME = os.getenv('LANGCHAIN_PROJECT')
-print("LANGCHAIN:", os.getenv("LANGCHAIN_API_KEY"))
+
+if not API_KEY:
+    raise RuntimeError("LANGCHAIN_API_KEY must be set before creating LangSmith datasets.")
 
 client = Client(api_key=API_KEY)
 
@@ -23,7 +25,7 @@ all_prompts = [
     "make me a timetable, then export it in html",
     "departure board",
     "make a commuter schedule with stop times",
-    "create a rail timetable"
+    "create a rail timetable",
     "I want the fare zones color coded in red",
     "group my stops by zone and stripe the rows",
     "handle NaN values for express trains that skip stops",
@@ -48,12 +50,12 @@ def push_dataset(name, prompts):
     )
     client.create_examples(
         inputs=[{"prompt": p} for p in prompts],
-        dataset_name=DATASET_NAME,
+        dataset_name=name,
     )
     return dataset
 
-def load_trainset_from_langsmith(DATASET_NAME):
-    examples = list(client.list_examples(dataset_name=DATASET_NAME))
+def load_trainset_from_langsmith(dataset_name):
+    examples = list(client.list_examples(dataset_name=dataset_name))
     trainset = [
         dspy.Example(user_prompt=ex.inputs["prompt"]).with_inputs("user_prompt")
         for ex in examples
@@ -66,4 +68,4 @@ def load_trainset_from_langsmith(DATASET_NAME):
 if __name__ == "__main__":
     push_dataset("transit-skill-train", train_prompts)
     push_dataset("transit-skill-test",  test_prompts)
-    print(f"\Trainset ready: {len(train_prompts)} examples, \nTest-set ready: {len(test_prompts)} examples.")
+    print(f"Trainset ready: {len(train_prompts)} examples, \nTest-set ready: {len(test_prompts)} examples.")

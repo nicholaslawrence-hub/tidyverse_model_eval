@@ -4,7 +4,11 @@ import time
 from pathlib import Path
 
 import plotnine_eval as pn_eval
-import great_tables_eval as gt_eval
+
+try:
+    import great_tables_eval as gt_eval
+except ImportError:
+    gt_eval = None
 
 GREEN, RED, YELLOW, BOLD, CYAN, RESET = (
     "\033[92m", "\033[91m", "\033[93m", "\033[1m", "\033[96m", "\033[0m"
@@ -16,9 +20,9 @@ def run_suite(name: str, cases, run_fn, case_ids: list[str] | None = None):
     if not filtered:
         return []
 
-    print(f"\n{BOLD}{CYAN}{'═' * 64}{RESET}")
+    print(f"\n{BOLD}{CYAN}{'=' * 64}{RESET}")
     print(f"{BOLD}{CYAN}  Suite: {name}  ({len(filtered)} cases){RESET}")
-    print(f"{BOLD}{CYAN}{'═' * 64}{RESET}\n")
+    print(f"{BOLD}{CYAN}{'=' * 64}{RESET}\n")
 
     results = []
     for case in filtered:
@@ -27,20 +31,20 @@ def run_suite(name: str, cases, run_fn, case_ids: list[str] | None = None):
         result = run_fn(case)
         elapsed = time.perf_counter() - t0
         results.append(result)
-        icon = f"{GREEN}✓{RESET}" if result.passed else f"{RED}✗{RESET}"
+        icon = f"{GREEN}PASS{RESET}" if result.passed else f"{RED}FAIL{RESET}"
         print(f" {icon}  ({result.score:.0%})  [{elapsed:.1f}s]")
 
     return results
 
 
 def print_combined_report(pn_results, gt_results) -> None:
-    print(f"\n{BOLD}{'═' * 64}{RESET}")
+    print(f"\n{BOLD}{'=' * 64}{RESET}")
     print(f"{BOLD}  COMBINED REPORT{RESET}")
-    print(f"{BOLD}{'═' * 64}{RESET}\n")
+    print(f"{BOLD}{'=' * 64}{RESET}\n")
 
     def suite_line(name, results):
         if not results:
-            return f"  {name:<20} —  (skipped)"
+            return f"  {name:<20} --  (skipped)"
         passed = sum(r.passed for r in results)
         total = len(results)
         avg = sum(r.score for r in results) / total
@@ -73,6 +77,11 @@ def save_combined_report(pn_results, gt_results) -> None:
                     for c in r.check_results
                 ],
                 "generated_code": r.generated_code,
+                "graph_nodes": getattr(r, "graph_nodes", []),
+                "prompt_variant": getattr(r, "prompt_variant", None),
+                "image_eval": getattr(r, "image_eval", None),
+                "llm_judge": getattr(r, "llm_judge", None),
+                "vision_judge": getattr(r, "vision_judge", None),
             }
             for r in results
         ]
@@ -98,7 +107,7 @@ def save_combined_report(pn_results, gt_results) -> None:
     path = "eval_report.json"
     with open(path, "w") as f:
         json.dump(report, f, indent=2)
-    print(f"Combined report saved → {path}")
+    print(f"Combined report saved -> {path}")
 
 
 def main() -> None:
@@ -109,7 +118,8 @@ def main() -> None:
     case_ids: list[str] | None = None
 
     pn_ids = {c.id for c in pn_eval.CASES}
-    gt_ids = {c.id for c in gt_eval.CASES}
+    gt_cases = getattr(gt_eval, "CASES", []) if gt_eval else []
+    gt_ids = {c.id for c in gt_cases}
 
     if args:
         first = args[0].lower().replace("-", "_")
@@ -138,8 +148,11 @@ def main() -> None:
     if run_gt:
         gt_case_ids = [i for i in (case_ids or [])] if case_ids else None
         gt_case_ids = [i for i in gt_case_ids if i in gt_ids] if gt_case_ids else None
-        gt_results = run_suite("great-tables", gt_eval.CASES, gt_eval.run_eval_case, gt_case_ids)
-        if gt_results:
+        if not gt_cases:
+            print("\n  great-tables        --  (skipped: use great_tables_eval/great_tables_eval.py)")
+        else:
+            gt_results = run_suite("great-tables", gt_cases, gt_eval.run_eval_case, gt_case_ids)
+        if gt_results and hasattr(gt_eval, "print_report"):
             gt_eval.print_report(gt_results)
 
     print_combined_report(pn_results, gt_results)
