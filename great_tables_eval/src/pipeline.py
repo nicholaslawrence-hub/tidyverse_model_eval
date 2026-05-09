@@ -2,11 +2,9 @@ import os
 from langsmith import Client
 import dspy
 from dspy.teleprompt import MIPROv2
-from langsmith.schemas import Run, Example
-from src.pipeline import run_pipeline
 
 
-client = Client(api_key=os.getenv("LANGCHAIN_API_KEY"))
+client = Client(api_key=os.getenv("LANGCHAIN_API_KEY")) if os.getenv("LANGCHAIN_API_KEY") else None
 
 COMPILED_PATH = "optimized_skill_generator.json"
 SKILL_OUTPUT = "skills/transit_table/SKILL.md"
@@ -113,15 +111,17 @@ class SkillJudge(dspy.Module):
 _judge = SkillJudge()
 
 def skill_metric(example, prediction, trace=None):
-    judge = dspy.ChainOfThought("user_prompt, skill_md -> composite_score: float")
-    result = judge(
+    result = _judge(
         user_prompt=example.user_prompt,
         skill_md=prediction.skill_md
     )
+    return float(result.score)
 
 # Pulls from langsmith dataset for training prompts for optimization
 
 def load_trainset(dataset_name: str = "transit-skill-train") -> list:
+    if not os.getenv("LANGCHAIN_API_KEY"):
+        raise RuntimeError("LANGCHAIN_API_KEY must be set to load LangSmith datasets.")
     client = Client(api_key=os.getenv("LANGCHAIN_API_KEY"))
     examples = list(client.list_examples(dataset_name=dataset_name))
     print(f"Loaded {len(examples)} examples from LangSmith")
@@ -133,6 +133,8 @@ def load_trainset(dataset_name: str = "transit-skill-train") -> list:
 # Compiles using prompts from Langchain database, runs over 10 trials
 
 def compile(dataset_name: str = "transit-skill-prompts", num_trials: int = 10):
+    if not dspy.settings.lm:
+        raise RuntimeError("DSPy is not configured with an LM. Run through great_tables_eval.py or call dspy.configure first.")
     trainset = load_trainset(dataset_name)
     optimizer = MIPROv2(
         metric=skill_metric, 
@@ -145,6 +147,8 @@ def compile(dataset_name: str = "transit-skill-prompts", num_trials: int = 10):
     return compiled
  
 def run(user_prompt: str, save_skill: bool = True):
+    if not dspy.settings.lm:
+        raise RuntimeError("DSPy is not configured with an LM. Run through great_tables_eval.py or call dspy.configure first.")
     generator = SkillGenerator()
     if os.path.exists(COMPILED_PATH):
         generator.load(COMPILED_PATH)
@@ -165,6 +169,8 @@ def run(user_prompt: str, save_skill: bool = True):
     return result.skill_md, judge_result
  
 def eval_dataset(dataset_name: str = "transit-skill-test"):
+    if not dspy.settings.lm:
+        raise RuntimeError("DSPy is not configured with an LM. Run through great_tables_eval.py or call dspy.configure first.")
     trainset = load_trainset(dataset_name)
     generator = SkillGenerator()
     if os.path.exists(COMPILED_PATH):
