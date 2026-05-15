@@ -1,6 +1,6 @@
 # Posit Evaluation Harness
 
-I built this project to test whether an LLM can reliably produce useful Python code for Posit-style visualization and table workflows. Instead of reading a model response and guessing whether it is good, the harness asks the model to generate code, runs that code, and checks the result against concrete expectations.
+I built this project to test whether an LLM can reliably produce useful Python code for Posit-style visualization and table workflows. Instead of reading a model response and guessing whether it is good, the harness asks the model to generate code, runs that code, and checks the result against concrete rubric checks that I designed. 
 
 There are two connected pieces:
 
@@ -43,15 +43,15 @@ The goal was to make model evaluation feel closer to software testing: specific 
     +-- test/
 ```
 
-## What It Does
+## Functionality Explanation
 
 The Plotnine side behaves like a small code runner and grader. Each case has a natural language prompt, the model returns Python, and the evaluator runs that Python in a temporary file. A case passes when enough of its task-specific checks succeed.
 
-The Plotnine evaluator now also uses the grammar-of-graphics skill graph during generation. Each case is mapped to graph nodes such as `intent-relationship`, `primitive-point`, `layer-aesthetic-mapping`, and `grader-plotnine-eval`; that active path becomes prompt context for the model and report metadata for the eval.
+The Plotnine evaluator now also uses the grammar-of-graphics skill graph during generation. Each case is mapped to graph nodes such as `intent-relationship`, `primitive-point`, `layer-aesthetic-mapping`, and `grader-plotnine-eval`; that active path becomes prompt context for the model and report metadata for the eval. This unique design mirrors the own syntax and functionality of Plotnine in Pythonm, as ggplot2 in R mirrors the same typology. This means that the knowledge graph of skill files will structurally mirror that of the agent's actual predicted tokens, heuristically allowing for more efficient retrieval and contextual scope when the LLM is solving bugs. 
 
-The Great Tables side is more about skill generation. It uses a working Caltrain timetable example as reference context, then asks DSPy to produce a reusable skill for similar table-building tasks. A judge model scores the generated skill for correctness, coverage, trigger accuracy, concision, and faithfulness to the original timetable design.
+I've implemented the GT-side evaluation suite as more of a test-demo for the functionality of this search heuristic, where the Great Tables side is more about skill generation. It uses a working Caltrain timetable example as reference context, then asks DSPy to produce a reusable skill for similar table-building tasks. A judge model scores the generated skill for correctness, coverage, trigger accuracy, concision, and faithfulness to the original timetable design. These rubric designs then get fed back into the DSPy optimizer function, and the skill-files are edited in place iteratively, until the LLM-as-a-judge is satisfied with the files. This means that the current GT implementation doesn't have active retrieval and a set pipeline for usage in agentic coding tools such as Claude Code, Codex, etc, but it helps to symbolize the function of the package. 
 
-The included datasets give the evals something real to work with: social-media usage data for visualization tasks and a Caltrain schedule CSV for styled transit-table generation.
+I've included some sample datasets for your personal use and to demonstrate the functionality of the eval suite - one social-media usage data for visualization tasks and a Caltrain schedule CSV for styled transit-table generation.
 
 ## Agent Skills
 
@@ -286,7 +286,7 @@ The reference context focuses on a styled Caltrain northbound weekend schedule w
 
 ## Outputs
 
-| Output | Created By | What It Contains |
+| Output | Created By | Content |
 |---|---|---|
 | `eval_report.json` | `python run_evals.py` | Combined Plotnine and Great Tables results, including pass counts, average score, check results, and generated code. |
 | `plotnine_eval_report.json` | `python plotnine_eval.py` | Plotnine-only case results with per-check pass/fail details and generated Python. |
@@ -295,19 +295,3 @@ The reference context focuses on a styled Caltrain northbound weekend schedule w
 | `output.png` | Generated Plotnine scripts | Temporary chart output used to confirm that generated visualization code saves a plot. |
 | `optimized_skill_generator.json` | `python great_tables_eval.py compile` | A compiled DSPy generator produced from LangSmith training prompts. |
 | `skills/transit_table/SKILL.md` | `python great_tables_eval.py run ...` | A generated Great Tables skill, saved only when the judge score meets the configured threshold. |
-
-These files make it easier to see not just whether a model succeeded, but how it succeeded or where it fell apart.
-
-## Known Notes
-
-- The current `plotnine_eval/cases.json` should be validated before running all Plotnine cases; malformed JSON will prevent case loading.
-- The Great Tables DSPy configuration currently reads `GEMINI_API_KEY` while specifying an Anthropic model through DSPy.
-- Some generated artifacts, such as `eval_report.json`, `plotnine_eval_report.json`, `output.png`, optimized DSPy JSON files, and generated `skills/` outputs, are runtime artifacts and are not required to understand the source project.
-
-## Resume Version
-
-| Version | Description |
-|---|---|
-| Short | Built a Python evaluation harness that tests LLM-generated Plotnine and Great Tables workflows by running generated code, scoring task-specific checks, and saving structured reports. |
-| More technical | Created an LLM eval system for Posit-style data workflows, with executable Plotnine chart-generation tests, custom grader functions, JSON reporting, and a DSPy/LangSmith pipeline for optimizing Great Tables skill generation. |
-| More personal | Built a project that turns messy model responses into something measurable: prompts go in, generated visualization or table code runs, and the harness reports exactly what worked and what failed. |
