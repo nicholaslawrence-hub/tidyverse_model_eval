@@ -60,11 +60,14 @@ This repo includes three project skills under `.claude/skills`, which Claude Cod
 | Skill | Use It For |
 |---|---|
 | `posit-repository` | Starting point for repo navigation and choosing the right subsystem. |
+| `posit-project-profile` | User/project purpose, aesthetic, and success criteria for generation, judging, rewriting, and reporting. |
 | `plotnine-grammar-of-graphics` | Plotnine chart construction and eval work organized as a typed knowledge graph of intents, grammar concepts, primitives, layers, outputs, and graders. |
 | `posit-great-tables-skills` | Working on the DSPy/LangSmith Great Tables skill-generation pipeline. |
 | `posit-eval-reporting` | Summarizing eval reports, writing project descriptions, or turning results into resume/README language. |
 
 The Plotnine skill has an explicit graph in `.claude/skills/plotnine-grammar-of-graphics/graph/graph.json`. Agents start from an intent node, such as `intent-relationship` or `intent-counts`, then follow typed edges into grammar concepts, aesthetics, geoms, presentation layers, output saving, and grader checks.
+
+The project profile is loaded into Plotnine generation prompts, LLM judges, DSPy code optimization, and DSPy skill rewriting. It keeps the system personalized to this repo's purpose: compact grammar-of-graphics examples, executable artifacts, measurable eval feedback, and reusable behavior for Codex and Claude Code.
 
 To make the same skills available globally in Codex or Claude Code, run:
 
@@ -175,6 +178,51 @@ python plotnine_eval.py --backend=dspy scatter_trend
 
 The DSPy program receives the task prompt, active graph context, few-shot examples, and the same judge rubric used by the evaluator. `MIPROv2` compiles the generator against a metric that combines LLM code judging, LLM vision judging, local image evaluation, and deterministic checks.
 
+### Optimize Plotnine Skill Rewriting With DSPy
+
+The Plotnine side also has a DSPy-based skill-rewriting loop. Failed eval cases become a small trainset. A DSPy `SkillRewriteProgram` proposes graph-node Markdown rewrites, and `MIPROv2` optimizes that rewriter against a self-supervised metric derived from eval patterns: failed checks imply target nodes, required terms, scope limits, and Markdown quality constraints.
+
+This command path requires `dspy-ai`; the rewriter imports DSPy directly and will fail fast if DSPy is not installed.
+
+Compile the skill rewriter from failed eval cases:
+
+```bash
+python plotnine_eval/skill_rewriter.py compile --report plotnine_eval_report.json --trials 5
+```
+
+This writes:
+
+```text
+plotnine_eval/compiled_skill_rewriter.json
+```
+
+Generate reviewable node-edit proposals with the compiled rewriter:
+
+```bash
+python plotnine_eval/skill_rewriter.py propose --report plotnine_eval_report.json
+```
+
+This writes:
+
+```text
+plotnine_skill_rewrite_proposals.json
+```
+
+After reviewing the proposal, apply it with:
+
+```bash
+python plotnine_eval/skill_rewriter.py apply --proposal plotnine_skill_rewrite_proposals.json
+```
+
+Useful focused runs:
+
+```bash
+python plotnine_eval/skill_rewriter.py compile --report plotnine_eval_report.json --case-id bar_pct_labels
+python plotnine_eval/skill_rewriter.py propose --report plotnine_eval_report.json --case-id bar_pct_labels
+```
+
+This workflow edits `.claude/skills/plotnine-grammar-of-graphics/graph/nodes/*.md`, not the Python evaluator. Rerun the affected evals after applying rewrites and keep the changes only when scores improve.
+
 ### Run Great Tables Workflows
 
 From `great_tables_eval`:
@@ -242,6 +290,8 @@ The reference context focuses on a styled Caltrain northbound weekend schedule w
 |---|---|---|
 | `eval_report.json` | `python run_evals.py` | Combined Plotnine and Great Tables results, including pass counts, average score, check results, and generated code. |
 | `plotnine_eval_report.json` | `python plotnine_eval.py` | Plotnine-only case results with per-check pass/fail details and generated Python. |
+| `plotnine_skill_rewrite_proposals.json` | `python plotnine_eval/skill_rewriter.py` | Proposed graph-node skill rewrites derived from failed Plotnine eval cases. |
+| `plotnine_eval/compiled_skill_rewriter.json` | `python plotnine_eval/skill_rewriter.py compile` | DSPy-optimized skill rewriter program for turning failed eval patterns into node-edit proposals. |
 | `output.png` | Generated Plotnine scripts | Temporary chart output used to confirm that generated visualization code saves a plot. |
 | `optimized_skill_generator.json` | `python great_tables_eval.py compile` | A compiled DSPy generator produced from LangSmith training prompts. |
 | `skills/transit_table/SKILL.md` | `python great_tables_eval.py run ...` | A generated Great Tables skill, saved only when the judge score meets the configured threshold. |
